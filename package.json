@@ -19,6 +19,7 @@
     "@mui/x-date-pickers": "^8.3.1",
     "@reduxjs/toolkit": "^2.7.0",
     "axios": "^1.9.0",
+    "firebase": "^11.9.1",
     "framer-motion": "^12.12.1",
     "lucide-react": "^0.513.0",
     "react": "^19.0.0",

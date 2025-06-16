@@ -8,11 +8,11 @@ const Navbar = () => {
   const [open, setOpen] = React.useState(false);
   const {
     user,
-    setUser,
     setShowlogin,
     setSearchQuery,
     searchQuery,
     getCartCount,
+    logout 
   } = useAppContext();
   const navigate = useNavigate();
 
@@ -20,7 +20,7 @@ const Navbar = () => {
     isActive ? 'text-primary' : 'text-grey hover:text-[#d4af37]';
 
   const handleLogout = async () => {
-    setUser(null);
+    logout()
     navigate('/');
   };
 
@@ -29,6 +29,8 @@ const Navbar = () => {
       navigate('products');
     }
   }, [searchQuery]);
+
+  console.log(user)
   return (
     <nav className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-300 bg-white relative transition-all">
       <Link to="/">
@@ -88,6 +90,13 @@ const Navbar = () => {
               className="hidden group-hover:block absolute top-10 bg-white shadow border border-gray-200 py-2.5
             rounded-md text-sm z-40"
             >
+
+              <li
+               
+                className="p-1 pl-3 hover:bg-green-100 cursor-pointer"
+              >
+                {user?.name?.split(' ')[0]}
+              </li>
               <li
                 onClick={() => navigate('/my-orders')}
                 className="p-1 pl-3 hover:bg-green-100 cursor-pointer"

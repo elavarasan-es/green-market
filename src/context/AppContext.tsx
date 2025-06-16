@@ -1,8 +1,10 @@
 // context/AppContext.tsx
-import React, { createContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import type { AppContextType, CartItems, Product, User } from '../types/type';
 import { dummyProducts } from '../assets/assets';
 import toast from 'react-hot-toast';
+import { auth } from '../components/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -11,88 +13,89 @@ interface AppContextProviderProps {
   children: ReactNode;
 }
 
-export const AppContextProvider: React.FC<AppContextProviderProps> = ({
-  children,
-}) => {
+export const AppContextProvider: React.FC<AppContextProviderProps> = ({ children }) => {
   const currency = import.meta.env.VITE_CURRENCY;
-  const [user, setUser] = useState<User | null | boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
   const [isSeller, setIsSeller] = useState(false);
   const [showLogin, setShowlogin] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [cartItems, setCartItems] = useState<CartItems>({});
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Load initial product data
   const fetchProducts = async () => {
     setProducts(dummyProducts);
   };
 
-  // Add cart item
+  // Auth state persistence
+  useEffect(() => {
+    fetchProducts();
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const token = await user.getIdToken();
+        setUser({
+          name: user.displayName || '',
+          email: user.email || '',
+          token,
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => unsubscribe(); // Clean up listener on unmount
+  }, []);
+
+  // Cart actions
   const addToCart = (itemId: string) => {
     const cartdata = structuredClone(cartItems);
-
-    if (cartdata[itemId]) {
-      cartdata[itemId] += 1;
-    } else {
-      cartdata[itemId] = 1;
-    }
+    cartdata[itemId] = (cartdata[itemId] || 0) + 1;
     setCartItems(cartdata);
     toast.success('Added to cart');
   };
 
-  // update cart item quantity
-
   const updateCartItem = (itemId: string, quantity: number) => {
     const cartdata = structuredClone(cartItems);
-    cartdata[itemId] = quantity;
     if (quantity === 0) {
       delete cartdata[itemId];
+    } else {
+      cartdata[itemId] = quantity;
     }
     setCartItems(cartdata);
     toast.success('Cart Updated');
   };
 
-  //Remove cart item
-  const removeCartItem = (itemid: string) => {
+  const removeCartItem = (itemId: string) => {
     const cartdata = structuredClone(cartItems);
-    if (cartdata[itemid]) {
-      cartdata[itemid] -= 1;
-      if (cartdata[itemid] === 0) {
-        delete cartdata[itemid];
-      }
+    if (cartdata[itemId]) {
+      cartdata[itemId] -= 1;
+      if (cartdata[itemId] <= 0) delete cartdata[itemId];
     }
     setCartItems(cartdata);
     toast.success('Removed from cart');
   };
 
-  // get cart item count
-
   const getCartCount = () => {
-    let totalCount = 0;
-
-    for (const item in cartItems) {
-      totalCount += cartItems[item];
-    }
-
-    return totalCount;
+    return Object.values(cartItems).reduce((total, count) => total + count, 0);
   };
-
-  // cart total amount
 
   const getCartAmount = () => {
     let totalAmount = 0;
     for (const item in cartItems) {
-      const itemInfo = products.find((product) => product._id === item);
-      if (itemInfo && cartItems[item] > 0) {
-        totalAmount += itemInfo?.offerPrice * cartItems[item];
+      const product = products.find((p) => p._id === item);
+      if (product) {
+        totalAmount += product.offerPrice * cartItems[item];
       }
     }
     return Math.floor(totalAmount * 100) / 100;
   };
 
-  useEffect(() => {
-    fetchProducts();
-   
-  }, []);
+  const logout = async () => {
+    await signOut(auth);
+    setUser(null);
+    toast.success('Logged out');
+  };
 
   const value: AppContextType = {
     user,
@@ -110,7 +113,8 @@ export const AppContextProvider: React.FC<AppContextProviderProps> = ({
     searchQuery,
     setSearchQuery,
     getCartCount,
-    getCartAmount
+    getCartAmount,
+    logout,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

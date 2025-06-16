@@ -1,10 +1,9 @@
 
 // types.ts (optional)
 export interface User {
-  id?: string;
   name: string;
   email: string;
-  // Add more fields if needed
+  token?: string;
 }
 
 export interface Product {
@@ -26,8 +25,8 @@ export type CartItems = {
   [productId: string]: number; // or `id: number` if numeric IDs
 };
 export interface AppContextType {
-  user: User | null | boolean;
-  setUser: React.Dispatch<React.SetStateAction<User | null |boolean>>;
+  user: User | null ;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isSeller: boolean;
   setIsSeller: React.Dispatch<React.SetStateAction<boolean>>;
   showLogin: boolean;
@@ -42,6 +41,7 @@ export interface AppContextType {
 setSearchQuery: React.Dispatch<React.SetStateAction<string>>
 getCartCount:()=>number;
 getCartAmount:()=> number;
+logout: () => Promise<void>;
 }
 
 export interface Address {
